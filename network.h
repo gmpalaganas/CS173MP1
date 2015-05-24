@@ -60,36 +60,33 @@ int initSocket(int type){
     return ret;
 }
 
-char* getMessage(int socketfd, const int bufferLen){
+char* getMessage(int socketfd, const int bufferLen) {
     
     char* buffer = malloc(bufferLen);
     bzero(buffer,bufferLen);
     //read() returns the length of the read message returns -1 if fails
-    int len = read(socketfd,buffer,bufferLen);
+    int len = read(socketfd, buffer, bufferLen);
 
     if(len < 0)
         error("Error reading message\n");
-
-
-
+        
     return buffer; 
 
 }
 
-void getFile(int socketfd, FILE* file){
+void getFile(int socketfd, FILE* file) {
     
     char buffer[BUFSIZ];
     bzero(buffer,BUFSIZ);
 
     //The first data sent is the file size
-    int len = read(socketfd,buffer,BUFSIZ);
+    int len = read(socketfd, buffer, BUFSIZ);
     int fileSize = atoi(buffer);
 
     if(len < 0)
         error("Error reading file\n");
 
     int remainingSize = fileSize; 
-
 
     while(((len = read(socketfd, buffer, BUFSIZ)) > 0) && (remainingSize > 0)){
         

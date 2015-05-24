@@ -1,0 +1,44 @@
+Protocol:
+
+
+Sending Files
+
+Receiving Files
+
+Transactions:
+1) Open connection
+2) Perform action
+3) Close connection
+
+Actions
+
+1) Client sends the action that he will take
+	a) DOWNLOAD "<file name>"
+	b) UPLOAD "<file name>"
+	c) LIST
+	d) LIST_SIZE
+	e) DELETE* "<file name>"
+
+DOWNLOAD:
+2) Server will send "ACK n", where n is the file size. Otherwise, it will send "NAK <error message number>.
+3) Client will wait if it receives ACK n.
+loop n times
+4) Server will send the file block
+5) Server will wait
+6) Client will ACK the file block
+endloop
+7) if n blocks received, client will close the connection.
+
+UPLOAD
+- Before sending the command to the server, the client will check if the file is present.
+- At the end: Server must update file list
+
+LIST
+- Server maintains a file in its directory `
+- Process will follow as in Download.
+- Instead of saving the file, the client will simply display the contents that he/she received. If LIST only, the client will ignore every second column.
+- If LIST_SIZE, the client will display everything (parse to a better format first).
+
+DELETE
+1) Client sends "DELETE <file name>"
+2) Server will delete the file and send an "ACK" if the file was deleted and a "NAK <error message number>" otherwise.
