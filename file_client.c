@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include "network.h"
+#include "utilities.h"
 
 #define SERVER_PORT 8888
 #define BUFFER_LENGTH 256
@@ -12,13 +13,13 @@ typedef struct sockaddr_in sockaddr_in;
 typedef struct hostent hostent;
 typedef int boolean;
 
-void getUserChoice();
+void runClientProgram(socketObject* clientSocket);
 void displayInstructions();
-boolean processCommand(char* input);
+boolean processCommand(char* command, socketObject* clientSocket);
 char* getInput();
 boolean isAlphaNumeric(char* input);
 boolean checkFilename(char* input);
-boolean processDownload(char* filename);
+boolean processDownload(char* filename, socketObject* clientSocket);
 boolean processUpload(char* filename);
 boolean processDelete(char* filename);
 boolean processList(boolean giveSize);
@@ -28,12 +29,9 @@ int main(int argc, char** argv) {
 
     socketObject* clientSocket;
     int filefd; //File Descriptor
-    int len; //Len of read or written in read() or write()    
-    char file_name[BUFFER_LENGTH];
-    char sendBuffer[BUFFER_LENGTH];
     
     FILE* file;
-    sockaddr_in* server_addr; //Structure containing Network Addresses
+    //Structure containing Network Addresses
 
     if (argc != 2) {
         printf("\nPlease input the IP Address of the server.\n");
@@ -49,14 +47,12 @@ int main(int argc, char** argv) {
     }
 
     //Setup the server address
-    bzero((char *) server_addr, sizeof(*server_addr));
-
-    server_addr->sin_family = AF_INET;
-    //htons converts from host byte order to network byte order
-    server_addr->sin_port = htons(SERVER_PORT);
-
-    //Copies the address of the server into the server_addr socket structure
-    if (inet_pton(AF_INET, argv[1], &(server_addr->sin_addr)) <= 0) {
+    clientSocket->server_addr = (sockaddr_in*)malloc(sizeof(sockaddr_in));
+    bzero((char *)(clientSocket->server_addr), sizeof(*(clientSocket->server_addr))); //Zero all the bytes
+    clientSocket->server_addr->sin_family = AF_INET; //Set to IPv4 IP address family
+    clientSocket->server_addr->sin_port = htons(SERVER_PORT); //Converts from host byte order to network byte order
+    //Copy the address of the server into the server_addr socket structure
+    if (inet_pton(AF_INET, argv[1], &((clientSocket->server_addr)->sin_addr)) <= 0) {
         printf("\nError: Could not bind IP address of server.\n");
         return 1;
     }
@@ -64,7 +60,7 @@ int main(int argc, char** argv) {
     printf("Connecting to server...\n");
 
     while(TRUE) {
-        getUserChoice();
+        runClientProgram(clientSocket);
         break;
     }
 
@@ -94,18 +90,20 @@ int main(int argc, char** argv) {
     fclose(file);
     /*free(buffer);*/
     
-    close(clientSocket->socketfd);
+    //close(clientSocket->socketfd); 
     return 0;
 }
 
-void getUserChoice() {
+void runClientProgram(socketObject* clientSocket) {
     char* command;
+    boolean isCommandValid = TRUE;
 
-    displayInstructions();
-    if (!checkCommand(command = getInput())) printf("Invalid command.\n");
-    else {
-
-    }
+    do {
+        displayInstructions();
+        command = getInput();
+        if (!(isCommandValid = processCommand(command, clientSocket))) printf("Invalid Command.\n");
+    } while (!isCommandValid);
+    
 }
 
 void displayInstructions() {
@@ -118,12 +116,12 @@ void displayInstructions() {
     printf("Input Command: ");
 }
 
-boolean checkCommand(char* input) {
-    char* token = strtok(input, " \n\r");
+boolean processCommand(char* command, socketObject* clientSocket) {
+    char* token = strtok(command, " \n\r");
     if (strcmp(token, COMMAND_DOWNLOAD) == 0) {
         token = strtok(NULL, " \n\r");
         if (isFilenameValid(token)) {
-            return processDownload(token);
+            return processDownload(token, clientSocket);
         } else {
             printf("Invalid file name: %s\n", token);
             return FALSE;
@@ -149,14 +147,15 @@ boolean checkCommand(char* input) {
     } else if (strcmp(token, COMMAND_LIST_SIZE) == 0) {
 
     } else {
-        printf("Unknown command: %s\n", input);
+        printf("Unknown command: %s\n", command);
         return FALSE;
     }
     return TRUE;
 }
 
-boolean processDownload(char* filename) {
-    return FALSE;
+boolean processDownload(char* filename, socketObject* clientSocket) {
+    
+    return TRUE;
 }
 
 boolean processUpload(char* filename) {
@@ -165,30 +164,4 @@ boolean processUpload(char* filename) {
 
 boolean processDelete(char* filename) {
     return FALSE;
-}
-
-
-/* Utility Functions */
-char* getInput() {
-    char* input = (char*) malloc(sizeof(char));
-    char nextChar = '\n';
-    int ctr;
-    for (ctr = 0; (nextChar = getchar()) != '\n' && nextChar != EOF; ctr++) {
-        input = (char*)realloc(input, (ctr + 1)*sizeof(char));
-        input[ctr] = nextChar;
-    }
-    input[ctr] = '\0';
-    return input;
-}
-
-boolean isAlphaNumeric(char* input) {
-    int i, len = strlen(input);
-    for (i = 0; i < len; i++) {
-        if (!isalnum(input[i])) return FALSE;
-    }
-    return TRUE;
-}
-
-boolean isFilenameValid(char* input) {
-    return isAlphaNumeric(strtok(input, ".")) && isAlphaNumeric(strtok(NULL, " \n\r"));
 }

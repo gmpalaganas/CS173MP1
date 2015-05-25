@@ -14,8 +14,6 @@ typedef struct hostent hostent;
 #define TCP SOCK_STREAM
 #define UDP SOCK_DGRAM
 #define IPv4 AF_INET
-#define TRUE 1
-#define FALSE 0
 
 #define COMMAND_DOWNLOAD "DOWNLOAD"
 #define COMMAND_UPLOAD "UPLOAD"
@@ -52,6 +50,7 @@ typedef struct socketObject {
     int socketfd;
     int bufferSize;
     char* buffer;
+    sockaddr_in* server_addr;
 } socketObject;
 
 //Prints error then exits with error code 1
@@ -142,19 +141,15 @@ void sendFile(int socketfd, int filefd, int size){
 
     }
 
-
 }
 
 int getFileSize(FILE* file){
-
     int ret = 0;
     fseek(file,0,SEEK_END);
     ret = ftell(file); 
     fseek(file,0,SEEK_SET);
 
     return ret;
-    
-
 }
 
 /* SERVER RELATED FUNCTIONS */

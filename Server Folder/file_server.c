@@ -6,7 +6,6 @@
 
 int main(){
 
-
     int socketfd; //Socket File Descriptor
     int newsocketfd;
     int client_len; //Client address size
