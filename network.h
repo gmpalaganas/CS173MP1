@@ -14,6 +14,14 @@ typedef struct hostent hostent;
 #define TCP SOCK_STREAM
 #define UDP SOCK_DGRAM
 #define IPv4 AF_INET
+#define TRUE 1
+#define FALSE 0
+
+#define COMMAND_DOWNLOAD "DOWNLOAD"
+#define COMMAND_UPLOAD "UPLOAD"
+#define COMMAND_LIST "LIST"
+#define COMMAND_LIST_SIZE "LIST_SIZE"
+#define COMMAND_DELETE "DELETE"
 
 /*
 
@@ -33,13 +41,18 @@ struct in_addr {
 */
 
 /*
- *
  * Note on bytes in C:
  *  It seems that bytes in C are represented as strings
  *  rather than integers which might explain why byte
  *  related functions accept char* as parameters
  *
  */
+
+typedef struct socketObject {
+    int socketfd;
+    int bufferSize;
+    char* buffer;
+} socketObject;
 
 //Prints error then exits with error code 1
 void error(char *msg){
