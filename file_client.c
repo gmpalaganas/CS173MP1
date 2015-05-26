@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
     int wait = 1;
 
     fclose(file);
-    /*free(buffer);*/
+    free(buffer);*/
     
     //close(clientSocket->socketfd); 
     return 0;
