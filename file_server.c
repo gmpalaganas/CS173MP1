@@ -160,6 +160,7 @@ boolean processList(boolean giveSize,socketObject *clientSocket){
     char* fileName = (giveSize == TRUE)?"._RES/files_size.txt":"._RES/files.txt";
     FILE *fileToSend = fopen(fileName,"w");
 
+    strcat(cwd,"/Files");
     writeDirToFile(fileToSend,cwd,giveSize);
     
 	int file_size;
@@ -181,6 +182,7 @@ boolean processList(boolean giveSize,socketObject *clientSocket){
     getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
 	
 
+    free(cwd);
 	fclose(fileToSend);
 	free(s_size);
 
