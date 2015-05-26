@@ -106,7 +106,6 @@ void getFile(int socketfd, FILE* file, int fileSize) {
 
         fwrite(buffer, sizeof(char), len, file);
         remainingSize -= len;
-        
         if (remainingSize < expectedSize) expectedSize = remainingSize;
 
         if(len < 0)

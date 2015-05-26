@@ -83,7 +83,8 @@ void runClientProgram(socketObject* clientSocket) {
         command = getInput(command);
         if (!(isCommandValid = processCommand(command, clientSocket))) {
         	printf("Invalid Command.\n");
-        	close(clientSocket->socketfd);
+        	if (recv(clientSocket->socketfd, clientSocket->recv_buffer, 1, MSG_PEEK) >= 0) close(clientSocket->socketfd);
+        	clientSocket->socketfd = initSocket(TCP);
         }
     } while (!isCommandValid);
     
