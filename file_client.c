@@ -207,7 +207,13 @@ boolean processDelete(char* filename) {
     return FALSE;
 }
 
+
+boolean processList(char* filename) {
+    return TRUE;
+}
+
 boolean connectToServer(socketObject* clientSocket) {
+
 	printf("Connecting to server...");
     if(connect(clientSocket->socketfd, (sockaddr *)(clientSocket->addr), sizeof(*(clientSocket->addr))) < 0) {
     	error("ERROR: Cannot connect to server.\n");

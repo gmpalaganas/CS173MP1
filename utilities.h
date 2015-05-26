@@ -79,3 +79,25 @@ void writeDirToFile(FILE* file, char* dir_name){
         closedir(dir);
     }
 }
+
+void writeDirWithSizeToFile(FILE* file, char* dir_name){
+
+    DIR *dir;
+    dir = opendir(dir_name);
+    directory_entity *entity;
+
+    if(dir == NULL)
+        printf("Error Opening Directory");
+    else{
+        while((entity = readdir(dir)) != NULL){
+            //Do not include hidden files
+            if(entity->d_name[0] != '.'){
+                FILE file* = fopen(entity->d_name,"r");
+                int size = getFileSize(file);
+                fclose(file);
+                fprintf(file,"%s - %d\n", entity->d_name,size);
+            } 
+        }
+        closedir(dir);
+    }
+}

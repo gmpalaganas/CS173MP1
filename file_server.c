@@ -73,7 +73,7 @@ boolean processCommand(char* command, socketObject* clientSocket) {
     } else if (strcmp(token, COMMAND_DELETE) == 0) {
         
     } else if (strcmp(token, COMMAND_LIST) == 0) {
-
+        return processList(clientSocket);
     } else if (strcmp(token, COMMAND_LIST_SIZE) == 0) {
 
     } else {
@@ -113,13 +113,24 @@ boolean processList(socketObject *clientSocket){
 
     char* cwd = (char *)malloc(sizeof(char) * BUFFER_LENGTH);
     getcwd(cwd, BUFFER_LENGTH);
-    FILE *dir = fopen("files.txt","w");
-    writeDirToFile(dir,cwd);
+    FILE *fileToSend = fopen("._RES/files.txt","w");
+    writeDirToFile(fileToSend,cwd);
     
-
-
-    fclose(dir);
+	int filefd = open("._RES/files.txt", O_RDONLY);
+    int file_size = getFileSize(fileToSend);
+	char* s_size = (char*)malloc(sizeof(char) * 20);
+    sprintf(s_size,"%d",file_size);
     
+    sendMessage(clientSocket->socketfd,s_size);
+    getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
+    printf("%s\n",clientSocket->recv_buffer);
+	sendFile(clientSocket->socketfd, filefd, getFileSize(fileToSend));
+    printf("File Sent\n");
+    getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
+    printf("%s\n",clientSocket->recv_buffer);
 
-
+    free(s_size);
+	
+    fclose(file_size);
+    
 }
