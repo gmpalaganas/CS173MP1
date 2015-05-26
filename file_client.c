@@ -16,17 +16,16 @@ typedef int boolean;
 void runClientProgram(socketObject* clientSocket);
 void displayInstructions();
 boolean processCommand(char* command, socketObject* clientSocket);
-char* getInput();
 boolean isAlphaNumeric(char* input);
 boolean checkFilename(char* input);
 boolean processDownload(char* filename, socketObject* clientSocket);
-boolean processUpload(char* filename);
+boolean processUpload(char* filename, socketObject* clientSocket);
 boolean processDelete(char* filename);
 boolean processList(boolean giveSize);
 
 
 int main(int argc, char** argv) {
-
+	
     socketObject* clientSocket;
     int filefd; //File Descriptor
     
@@ -51,6 +50,8 @@ int main(int argc, char** argv) {
     bzero((char *)(clientSocket->server_addr), sizeof(*(clientSocket->server_addr))); //Zero all the bytes
     clientSocket->server_addr->sin_family = AF_INET; //Set to IPv4 IP address family
     clientSocket->server_addr->sin_port = htons(SERVER_PORT); //Converts from host byte order to network byte order
+    
+    
     //Copy the address of the server into the server_addr socket structure
     if (inet_pton(AF_INET, argv[1], &((clientSocket->server_addr)->sin_addr)) <= 0) {
         printf("\nError: Could not bind IP address of server.\n");
@@ -90,20 +91,23 @@ int main(int argc, char** argv) {
     fclose(file);
     /*free(buffer);*/
     
-    //close(clientSocket->socketfd); 
+    close(clientSocket->socketfd); 
     return 0;
 }
 
 void runClientProgram(socketObject* clientSocket) {
     char* command;
     boolean isCommandValid = TRUE;
+    
+    
 
     do {
         displayInstructions();
-        command = getInput();
+        command = getInput(command);
         if (!(isCommandValid = processCommand(command, clientSocket))) printf("Invalid Command.\n");
     } while (!isCommandValid);
     
+    free(command);
 }
 
 void displayInstructions() {
@@ -117,22 +121,22 @@ void displayInstructions() {
 }
 
 boolean processCommand(char* command, socketObject* clientSocket) {
-    char* token = strtok(command, " \n\r");
+	char* commandCopy = (char*)malloc(sizeof(char)*(strlen(command) + 1));
+	strcpy(commandCopy, command);
+    char* token = strtok(commandCopy, " \n\r");
     if (strcmp(token, COMMAND_DOWNLOAD) == 0) {
         token = strtok(NULL, " \n\r");
         if (isFilenameValid(token)) {
             return processDownload(token, clientSocket);
         } else {
             printf("Invalid file name: %s\n", token);
-            return FALSE;
         }
     } else if (strcmp(token, COMMAND_UPLOAD) == 0) {
         token = strtok(NULL, " \n\r");
         if (isFilenameValid(token)) {
-            return processUpload(token);
+            return processUpload(token, clientSocket);
         } else {
             printf("Invalid file name: %s\n", token);
-            return FALSE;
         }
     } else if (strcmp(token, COMMAND_DELETE) == 0) {
         token = strtok(NULL, " \n\r");
@@ -140,7 +144,6 @@ boolean processCommand(char* command, socketObject* clientSocket) {
             return processDelete(token);
         } else {
             printf("Invalid file name: %s\n", token);
-            return FALSE;
         }
     } else if (strcmp(token, COMMAND_LIST) == 0) {
 
@@ -148,9 +151,10 @@ boolean processCommand(char* command, socketObject* clientSocket) {
 
     } else {
         printf("Unknown command: %s\n", command);
-        return FALSE;
     }
-    return TRUE;
+    free(token);
+    free(commandCopy);
+    return FALSE;
 }
 
 boolean processDownload(char* filename, socketObject* clientSocket) {
@@ -158,10 +162,45 @@ boolean processDownload(char* filename, socketObject* clientSocket) {
     return TRUE;
 }
 
-boolean processUpload(char* filename) {
-    return FALSE;
+boolean processUpload(char* filename, socketObject* clientSocket) {
+	if (!connectToServer(clientSocket)) return FALSE;
+	
+	//Send the request + the filename to the server
+	//int socketfd = clientSocket->socketfd;
+	
+    sendMessage(clientSocket->socketfd, filename);
+
+	FILE* file = fopen(filename, "r");
+	int filefd = open(filename, O_RDONLY);
+
+    sendFile(socketfd, filefd, getFileSize(file));
+	//sendMessage(clientSocket->socketfd, filename);
+	
+	
+	//Open the file and prepare for sending
+	FILE* fileToSend = fopen(filename, "r");
+	int filefd = open(filename, O_RDONLY);
+	
+	printf("File Size: %d\n", getFileSize(fileToSend));
+	
+
+	
+	sendFile(clientSocket->socketfd, filefd, getFileSize(fileToSend));
+	
+    return TRUE;
 }
 
 boolean processDelete(char* filename) {
     return FALSE;
 }
+
+boolean connectToServer(socketObject* clientSocket) {
+	printf("Connecting to server...");
+    if(connect(clientSocket->socketfd, (sockaddr *)(clientSocket->server_addr), sizeof(*(clientSocket->server_addr))) < 0) {
+    	error("ERROR: Cannot connect to server.\n");
+    	return FALSE;
+    }
+    printf("Connected!\n");
+    return TRUE;
+}
+
