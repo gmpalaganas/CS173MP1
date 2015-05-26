@@ -96,19 +96,15 @@ void getFile(int socketfd, FILE* file, int fileSize) {
     
     char* buffer = (char *)malloc(sizeof(char) * BUFSIZ);
     bzero(buffer,BUFSIZ);
-    int expectedSize = BUFSIZ;
 
     int len = 0;
     int expectedSize = BUFSIZ;
     int remainingSize = fileSize; 
 
     while(((len = read(socketfd, buffer, expectedSize)) > 0) && (remainingSize > 0)){
-<<<<<<< HEAD
         
         printf("HERE: %d\n", remainingSize);
-=======
 
->>>>>>> 64cffb5b8a0744bf5654b0dda18792f1e8e35144
         fwrite(buffer, sizeof(char), len, file);
         remainingSize -= len;
         
