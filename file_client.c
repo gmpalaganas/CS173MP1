@@ -20,7 +20,7 @@ boolean isAlphaNumeric(char* input);
 boolean checkFilename(char* input);
 boolean processDownload(char* filename, socketObject* clientSocket);
 boolean processUpload(char* filename, socketObject* clientSocket);
-boolean processDelete(char* filename);
+boolean processDelete(char* filename, socketObject* clientSocket);
 boolean processList(boolean giveSize);
 
 
@@ -70,32 +70,6 @@ int main(int argc, char** argv) {
         break;
     }
 
-    /*
-    if(connect(socketfd, (sockaddr *) &addr, sizeof(addr)) < 0) 
-        error("ERROR connecting");
-
-    printf("Connected to server!\n");
-
-    printf("Enter File Name: ");
-    scanf("%s%*c",file_name);
-
-    sendMessage(socketfd, file_name);
-
-    file = fopen(file_name,"r");
-    int size = getFileSize(file);
-    filefd = open(file_name, O_RDONLY);
-    char s_size[15];
-    sprintf(s_size,"%d",size);
-    printf("File Name: %s\nFile Size: %d\n",file_name,size);
-    sendMessage(socketfd,s_size);
-
-    sendFile(socketfd,filefd,size);
-
-    int wait = 1;
-
-    fclose(file);
-    free(buffer);*/
-    
     close(clientSocket->socketfd); 
     destroySocketObject(clientSocket);
     return 0;
@@ -105,12 +79,13 @@ void runClientProgram(socketObject* clientSocket) {
     char* command;
     boolean isCommandValid = TRUE;
     
-    
-
     do {
         displayInstructions();
         command = getInput(command);
-        if (!(isCommandValid = processCommand(command, clientSocket))) printf("Invalid Command.\n");
+        if (!(isCommandValid = processCommand(command, clientSocket))) {
+        	printf("Invalid Command.\n");
+        	close(clientSocket->socketfd);
+        }
     } while (!isCommandValid);
     
     free(command);
@@ -147,7 +122,7 @@ boolean processCommand(char* command, socketObject* clientSocket) {
     } else if (strcmp(token, COMMAND_DELETE) == 0) {
         token = strtok(NULL, " \n\r");
         if (isFilenameValid(token)) {
-            return processDelete(token);
+            return processDelete(token, clientSocket);
         } else {
             printf("Invalid file name: %s\n", token);
         }
@@ -158,12 +133,43 @@ boolean processCommand(char* command, socketObject* clientSocket) {
     } else {
         printf("Unknown command: %s\n", command);
     }
-    free(token);
+
     free(commandCopy);
     return FALSE;
 }
 
 boolean processDownload(char* filename, socketObject* clientSocket) {
+    if (!connectToServer(clientSocket)) return FALSE;
+
+	//Send the command and get the ACK
+    sendMessage(clientSocket->socketfd, "DOWNLOAD");
+    getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
+    
+    //Send the filename and get the ACK
+    sendMessage(clientSocket->socketfd, filename);
+    getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
+    
+    //Prepare the file for download
+    FILE* downloadedFile = fopen(filename, "w");
+    
+    //Get the size of the file and send an ACK
+    getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
+    sendACK(clientSocket->socketfd);
+    int size = atoi(clientSocket->recv_buffer);
+    printf("File Size: %s\n", clientSocket->recv_buffer);
+	
+	if (size < 0) {
+		printf("ERROR: File cannot be found on server.\n");
+		return FALSE;
+	}
+    
+    //Get the file and send an ACK
+    getFile(clientSocket->socketfd, downloadedFile, size);
+    sendACK(clientSocket->socketfd);
+    
+    fclose(downloadedFile);
+    
+    printf("Download complete!\n");
     
     return TRUE;
 }
@@ -174,9 +180,9 @@ boolean processUpload(char* filename, socketObject* clientSocket) {
 	//Send the request + the filename to the server
 	//int socketfd = clientSocket->socketfd;
     
-    /*sendMessage(clientSocket->socketfd, "UPLOAD");*/
-    /*getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);*/
-    /*printf("%s\n",clientSocket->recv_buffer);*/
+    sendMessage(clientSocket->socketfd, "UPLOAD");
+    getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
+    printf("%s\n",clientSocket->recv_buffer);
 	
     sendMessage(clientSocket->socketfd, filename);
     getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
@@ -203,7 +209,33 @@ boolean processUpload(char* filename, socketObject* clientSocket) {
     return TRUE;
 }
 
-boolean processDelete(char* filename) {
+boolean processDelete(char* filename, socketObject* clientSocket) {
+    if (!connectToServer(clientSocket)) return FALSE;
+
+	//Send the command and get an ACK
+	sendMessage(clientSocket->socketfd, COMMAND_DELETE);
+	getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
+	
+	//Send the filename and get an ACK
+	sendMessage(clientSocket->socketfd, filename);
+	getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
+	
+	//Get the confirmation about whether the file was deleted.
+	getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
+	sendACK(clientSocket->socketfd);
+	int result = atoi(clientSocket->recv_buffer);
+	switch (result) {
+		case 0:
+			printf("ERROR: File could not be found on server!\n");
+			break;
+		case 1:
+			printf("File was successfully deleted!\n");
+			return TRUE;
+		default:
+			printf("ERROR: Unknown error occurred while deleting file.\n");
+			break;
+	}
+
     return FALSE;
 }
 

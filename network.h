@@ -98,21 +98,23 @@ void getFile(int socketfd, FILE* file, int fileSize) {
     bzero(buffer,BUFSIZ);
 
     int len = 0;
-
+    int expectedSize = BUFSIZ;
     int remainingSize = fileSize; 
 
-    while(((len = read(socketfd, buffer, BUFSIZ)) > 0) && (remainingSize > 0)){
-
+    while(((len = read(socketfd, buffer, expectedSize)) > 0) && (remainingSize > 0)){
+        
+        printf("HERE: %d\n", remainingSize);
         fwrite(buffer, sizeof(char), len, file);
         remainingSize -= len;
+        
+        if (remainingSize < expectedSize) expectedSize = remainingSize;
 
         if(len < 0)
             error("Error reading file\n");
     }  
 
+    printf("Remaining Size: %d", remainingSize);
     free(buffer);
-
-
 }
 
 
@@ -141,7 +143,7 @@ void sendFile(int socketfd, int filefd, int size){
     
     while(((len = sendfile(socketfd,filefd,&offset,BUFSIZ)) > 0) && remainingSize > 0){
         
-        printf("HERE\n");
+        printf("HERE: %d\n", remainingSize);
         if(len < 0)
             error("Error sending file\n");
 
@@ -149,6 +151,7 @@ void sendFile(int socketfd, int filefd, int size){
 
     }
 
+    printf("Remaining Size: %d", remainingSize);
 }
 
 /* SERVER RELATED FUNCTIONS */
@@ -162,7 +165,6 @@ void initServer(sockaddr_in *serverAddr, int port){
     serverAddr->sin_port = htons(port);
     //INADDR_ANY sets the address to the address of the machine wherein the code is running 
     serverAddr->sin_addr.s_addr = INADDR_ANY;
-
 }
 
 //Binds server socket
