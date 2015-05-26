@@ -182,11 +182,9 @@ boolean processUpload(char* filename, socketObject* clientSocket) {
     
     sendMessage(clientSocket->socketfd, "UPLOAD");
     getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
-    printf("%s\n",clientSocket->recv_buffer);
 	
     sendMessage(clientSocket->socketfd, filename);
     getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
-    printf("%s\n",clientSocket->recv_buffer);
 
 	
 	//Open the file and prepare for sending
@@ -198,11 +196,9 @@ boolean processUpload(char* filename, socketObject* clientSocket) {
     
     sendMessage(clientSocket->socketfd,s_size);
     getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
-    printf("%s\n",clientSocket->recv_buffer);
 	sendFile(clientSocket->socketfd, filefd, getFileSize(fileToSend));
     printf("File Sent\n");
     getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
-    printf("%s\n",clientSocket->recv_buffer);
 
     free(s_size);
 	
