@@ -105,7 +105,6 @@ void getFile(int socketfd, FILE* file, int fileSize) {
 
     while(((len = read(socketfd, buffer, expectedSize)) > 0) && (remainingSize > 0)){
         
-        printf("HERE: %d\n", remainingSize);
 
         fwrite(buffer, sizeof(char), len, file);
         remainingSize -= len;
@@ -119,7 +118,6 @@ void getFile(int socketfd, FILE* file, int fileSize) {
     }  
     
 
-    printf("Remaining Size: %d", remainingSize);
     free(buffer);
 }
 
@@ -149,7 +147,6 @@ void sendFile(int socketfd, int filefd, int size){
     
     while(((len = sendfile(socketfd,filefd,&offset,BUFSIZ)) > 0) && remainingSize > 0){
         
-        printf("HERE: %d\n", remainingSize);
         if(len < 0)
             error("Error sending file\n");
 
@@ -157,7 +154,6 @@ void sendFile(int socketfd, int filefd, int size){
 
     }
 
-    printf("Remaining Size: %d", remainingSize);
 }
 
 /* SERVER RELATED FUNCTIONS */

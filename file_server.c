@@ -29,7 +29,6 @@ void *runClientHandler(void *socket) {
 }
 
 int main(){
-
     socketObject *serverSocket, *clientSocket;
     int client_len; //Client address size
     int len; //Len of read or written in read() or write()
@@ -121,9 +120,9 @@ boolean processCommand(socketObject* clientSocket) {
     } else if (strcmp(clientSocket->recv_buffer, COMMAND_DELETE) == 0) {
         return processDelete(clientSocket);
     } else if (strcmp(clientSocket->recv_buffer, COMMAND_LIST) == 0) {
-
+        return processList(FALSE,clientSocket);
     } else if (strcmp(clientSocket->recv_buffer, COMMAND_LIST_SIZE) == 0) {
-
+        return processList(TRUE,clientSocket);
     } else {
         printf("Unknown clientSocket->recv_buffer: %s\n", clientSocket->recv_buffer);
     }
@@ -202,6 +201,41 @@ boolean processUpload(socketObject *clientSocket){
 
 }
 
+boolean processList(boolean giveSize,socketObject *clientSocket){
+
+    char* cwd = (char *)malloc(sizeof(char) * BUFFER_LENGTH);
+    getcwd(cwd, BUFFER_LENGTH);
+    char* fileName = (giveSize == TRUE)?"._RES/files_size.txt":"._RES/files.txt";
+    FILE *fileToSend = fopen(fileName,"w");
+
+    strcat(cwd,"/Files");
+    writeDirToFile(fileToSend,cwd,giveSize);
+    
+	int file_size;
+    file_size = getFileSize(fileToSend);
+
+	fclose(fileToSend);
+
+    fileToSend = fopen(fileName,"r");
+	char* s_size = (char*)malloc(sizeof(char) * 20);
+
+    //Send the size of the file and get the ACK
+    sprintf(s_size, "%d", file_size);
+    sendMessage(clientSocket->socketfd, s_size);
+    getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
+
+    //Send the file and get the ACK
+    int filefd = open(fileName, O_RDONLY);
+    sendFile(clientSocket->socketfd, filefd, file_size);
+    getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
+	
+
+    free(cwd);
+	fclose(fileToSend);
+	free(s_size);
+
+}
+
 boolean processDelete(socketObject *clientSocket) {
 	FILE* file;
 	
@@ -232,6 +266,5 @@ boolean processDelete(socketObject *clientSocket) {
 	
 	return TRUE;
 }
-
 
 

@@ -1,11 +1,15 @@
 #include <string.h>
+#include <stdlib.h>
+#include <dirent.h>
 
 #define TRUE 1
 #define FALSE 0
 #define DELIMITERS_WHITESPACE " \n\r"
 #define DELIMITERS_PERIOD "."
+#define KILOBYTE 1024
 
 typedef int boolean;
+typedef struct dirent directory_entity;
 
 /* Utility Functions */
 char* getInput(char* inputStorage) {
@@ -54,8 +58,46 @@ int getFileSize(FILE* file){
     int ret = 0;
     fseek(file,0,SEEK_END);
     ret = ftell(file); 
-    //fseek(file,0,SEEK_SET);
     rewind(file);
 
     return ret;
+}
+
+void writeDirToFile(FILE* file, char* dir_name, boolean giveSize){
+
+    DIR *dir;
+    dir = opendir(dir_name);
+    directory_entity *entity;
+
+    if(dir == NULL)
+        printf("Error Opening Directory");
+    else{
+        while((entity = readdir(dir)) != NULL){
+            //Do not include hidden files
+            if(entity->d_name[0] != '.'){
+                if(giveSize == TRUE){
+                    FILE* curFile = fopen(entity->d_name,"r");
+                    int size = getFileSize(curFile);
+                    if(size < KILOBYTE)
+                        fprintf(file,"%s -- %d bytes\n", entity->d_name,size);
+                    else{
+                        float f_size = (float)size / (float)KILOBYTE;
+                        fprintf(file,"%s -- %0.1f kB\n", entity->d_name,f_size);
+                    }
+                    fclose(curFile);
+                }else
+                    fprintf(file,"%s\n", entity->d_name);
+            }
+        }
+        closedir(dir);
+    }
+}
+
+
+void printFileContents(FILE* file){
+    
+    char c;
+    while((c = getc(file)) != EOF)
+        putchar(c);
+
 }
