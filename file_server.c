@@ -25,7 +25,6 @@ int main(){
     clientSocket->send_buffer = (char*)malloc(sizeof(char));
     clientSocket->recv_buffer = (char*)malloc(sizeof(char));
 
-    
     serverSocket->socketfd = initSocket(TCP);
     
     if(serverSocket->socketfd < 0)
@@ -52,7 +51,8 @@ int main(){
     /*sendACK(clientSocket->socketfd);*/
     /*printf("COMMAND: %s\n", clientSocket->recv_buffer);*/
 
-    processUpload(clientSocket);
+    //Start server program
+    processCommand(clientSocket);
      
     close(clientSocket->socketfd);
     close(serverSocket->socketfd);
@@ -62,27 +62,72 @@ int main(){
     return 0;
 }
 
-boolean processCommand(char* command, socketObject* clientSocket) {
-	char* commandCopy = (char*)malloc(sizeof(char)*(strlen(command) + 1));
-	strcpy(commandCopy, command);
-    char* token = strtok(commandCopy, " \n\r");
-    if (strcmp(token, COMMAND_DOWNLOAD) == 0) {
-        
-    } else if (strcmp(token, COMMAND_UPLOAD) == 0) {
+boolean processCommand(socketObject* clientSocket) {
+	getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
+    printf("Command: |%s\n", clientSocket->recv_buffer);
+    sendACK(clientSocket->socketfd);
+    if (strcmp(clientSocket->recv_buffer, COMMAND_DOWNLOAD) == 0) {
+        return processDownload(clientSocket);
+    } else if (strcmp(clientSocket->recv_buffer, COMMAND_UPLOAD) == 0) {
         return processUpload(clientSocket);
-    } else if (strcmp(token, COMMAND_DELETE) == 0) {
-        
-    } else if (strcmp(token, COMMAND_LIST) == 0) {
-        return processList(clientSocket);
-    } else if (strcmp(token, COMMAND_LIST_SIZE) == 0) {
-
+    } else if (strcmp(clientSocket->recv_buffer, COMMAND_DELETE) == 0) {
+        return processDelete(clientSocket);
+    } else if (strcmp(clientSocket->recv_buffer, COMMAND_LIST) == 0) {
+        return processList(FALSE,clientSocket);
+    } else if (strcmp(clientSocket->recv_buffer, COMMAND_LIST_SIZE) == 0) {
+        return processList(TRUE,clientSocket);
     } else {
-        printf("Unknown command: %s\n", command);
+        printf("Unknown clientSocket->recv_buffer: %s\n", clientSocket->recv_buffer);
     }
 
-    free(token);
-    free(commandCopy);
+    free(clientSocket->recv_buffer);
     return FALSE;
+}
+
+boolean processDownload(socketObject* clientSocket) {
+	
+	FILE* file;
+	
+	//Get the name of the file and send the ACK
+	getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
+	char* filename = (char*)malloc(sizeof(char)*(strlen(clientSocket->recv_buffer) + 1));
+	strcpy(filename, clientSocket->recv_buffer);
+	printf("File Name: %s\n", clientSocket->recv_buffer);
+	sendACK(clientSocket->socketfd);
+	
+	//Send the size of the file. If the file does not exist, send -1.
+	file = fopen(filename, "r");
+	char* s_size = (char*)malloc(sizeof(char) * 20);
+	int file_size;
+	if (file == NULL) {
+		file_size = -1;
+		sprintf(s_size, "%d", file_size);
+		
+		//Send the -1 size (since it's an error) and get the ACK
+		sendMessage(clientSocket->socketfd, s_size);
+		getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
+		return;
+	} else {
+		//Send the size of the file and get the ACK
+		file_size = getFileSize(file);
+		sprintf(s_size, "%d", file_size);
+		sendMessage(clientSocket->socketfd, s_size);
+		getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
+		
+		//Send the file and get the ACK
+		int filefd = open(filename, O_RDONLY);
+		sendFile(clientSocket->socketfd, filefd, file_size);
+		printf("File Sent.\n");
+		getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
+
+	}
+	
+	fclose(file);
+	free(filename);
+	free(s_size);
+
+	return TRUE;	
+
 }
 
 boolean processUpload(socketObject *clientSocket){
@@ -109,28 +154,68 @@ boolean processUpload(socketObject *clientSocket){
 
 }
 
-boolean processList(socketObject *clientSocket){
+boolean processList(boolean giveSize,socketObject *clientSocket){
 
     char* cwd = (char *)malloc(sizeof(char) * BUFFER_LENGTH);
     getcwd(cwd, BUFFER_LENGTH);
-    FILE *fileToSend = fopen("._RES/files.txt","w");
-    writeDirToFile(fileToSend,cwd);
-    
-	int filefd = open("._RES/files.txt", O_RDONLY);
-    int file_size = getFileSize(fileToSend);
-	char* s_size = (char*)malloc(sizeof(char) * 20);
-    sprintf(s_size,"%d",file_size);
-    
-    sendMessage(clientSocket->socketfd,s_size);
-    getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
-    printf("%s\n",clientSocket->recv_buffer);
-	sendFile(clientSocket->socketfd, filefd, getFileSize(fileToSend));
-    printf("File Sent\n");
-    getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
-    printf("%s\n",clientSocket->recv_buffer);
+    char* fileName = (giveSize == TRUE)?"._RES/files_size.txt":"._RES/files.txt";
+    FILE *fileToSend = fopen(fileName,"w");
 
-    free(s_size);
-	
-    fclose(file_size);
+    writeDirToFile(fileToSend,cwd,giveSize);
     
+	int file_size;
+    file_size = getFileSize(fileToSend);
+
+	fclose(fileToSend);
+
+    fileToSend = fopen(fileName,"r");
+	char* s_size = (char*)malloc(sizeof(char) * 20);
+
+    //Send the size of the file and get the ACK
+    sprintf(s_size, "%d", file_size);
+    sendMessage(clientSocket->socketfd, s_size);
+    getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
+
+    //Send the file and get the ACK
+    int filefd = open(fileName, O_RDONLY);
+    sendFile(clientSocket->socketfd, filefd, file_size);
+    getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
+	
+
+	fclose(fileToSend);
+	free(s_size);
+
 }
+
+boolean processDelete(socketObject *clientSocket) {
+	FILE* file;
+	
+	//Get the file name and send an ACK
+	getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
+	char* filename = (char*)malloc(sizeof(char)*strlen(clientSocket->recv_buffer));
+	strcpy(filename, clientSocket->recv_buffer);
+	sendACK(clientSocket->socketfd);
+	
+	//Determine the error code or result code to send to the client.
+	int resultCode;
+	file = fopen(filename, "r");
+	if (file == NULL) {
+		resultCode = 0;
+	} else {
+		if (remove(filename) == 0) resultCode = 1;
+		else resultCode = 2;
+	}
+	char* s_resultCode = (char*)malloc(sizeof(char)*5);
+	sprintf(s_resultCode, "%d", resultCode);
+	
+	//Send the result code and get an ACK
+	sendMessage(clientSocket->socketfd, s_resultCode);
+	getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
+	
+	if (file != NULL) fclose(file);
+	free(s_resultCode);
+	
+	return TRUE;
+}
+
+

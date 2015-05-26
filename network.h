@@ -96,16 +96,18 @@ void getFile(int socketfd, FILE* file, int fileSize) {
     
     char* buffer = (char *)malloc(sizeof(char) * BUFSIZ);
     bzero(buffer,BUFSIZ);
-    int expectedSize = BUFSIZ;
 
     int len = 0;
-
+    int expectedSize = BUFSIZ;
     int remainingSize = fileSize; 
 
     while(((len = read(socketfd, buffer, expectedSize)) > 0) && (remainingSize > 0)){
+        
 
         fwrite(buffer, sizeof(char), len, file);
         remainingSize -= len;
+        
+        if (remainingSize < expectedSize) expectedSize = remainingSize;
 
         if(len < 0)
             error("Error reading file\n");
@@ -116,8 +118,6 @@ void getFile(int socketfd, FILE* file, int fileSize) {
     
 
     free(buffer);
-
-
 }
 
 
@@ -146,7 +146,6 @@ void sendFile(int socketfd, int filefd, int size){
     
     while(((len = sendfile(socketfd,filefd,&offset,BUFSIZ)) > 0) && remainingSize > 0){
         
-        printf("HERE\n");
         if(len < 0)
             error("Error sending file\n");
 
@@ -167,7 +166,6 @@ void initServer(sockaddr_in *serverAddr, int port){
     serverAddr->sin_port = htons(port);
     //INADDR_ANY sets the address to the address of the machine wherein the code is running 
     serverAddr->sin_addr.s_addr = INADDR_ANY;
-
 }
 
 //Binds server socket

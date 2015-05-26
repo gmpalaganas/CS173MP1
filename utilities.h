@@ -6,6 +6,7 @@
 #define FALSE 0
 #define DELIMITERS_WHITESPACE " \n\r"
 #define DELIMITERS_PERIOD "."
+#define KILOBYTE 1024
 
 typedef int boolean;
 typedef struct dirent directory_entity;
@@ -62,25 +63,7 @@ int getFileSize(FILE* file){
     return ret;
 }
 
-void writeDirToFile(FILE* file, char* dir_name){
-
-    DIR *dir;
-    dir = opendir(dir_name);
-    directory_entity *entity;
-
-    if(dir == NULL)
-        printf("Error Opening Directory");
-    else{
-        while((entity = readdir(dir)) != NULL){
-            //Do not include hidden files
-            if(entity->d_name[0] != '.')
-                    fprintf(file,"%s\n", entity->d_name);
-        }
-        closedir(dir);
-    }
-}
-
-void writeDirWithSizeToFile(FILE* file, char* dir_name){
+void writeDirToFile(FILE* file, char* dir_name, boolean giveSize){
 
     DIR *dir;
     dir = opendir(dir_name);
@@ -92,12 +75,29 @@ void writeDirWithSizeToFile(FILE* file, char* dir_name){
         while((entity = readdir(dir)) != NULL){
             //Do not include hidden files
             if(entity->d_name[0] != '.'){
-                FILE file* = fopen(entity->d_name,"r");
-                int size = getFileSize(file);
-                fclose(file);
-                fprintf(file,"%s - %d\n", entity->d_name,size);
-            } 
+                if(giveSize == TRUE){
+                    FILE* curFile = fopen(entity->d_name,"r");
+                    int size = getFileSize(curFile);
+                    if(size < KILOBYTE)
+                        fprintf(file,"%s -- %d bytes\n", entity->d_name,size);
+                    else{
+                        float f_size = (float)size / (float)KILOBYTE;
+                        fprintf(file,"%s -- %0.1f kB\n", entity->d_name,f_size);
+                    }
+                    fclose(curFile);
+                }else
+                    fprintf(file,"%s\n", entity->d_name);
+            }
         }
         closedir(dir);
     }
+}
+
+
+void printFileContents(FILE* file){
+    
+    char c;
+    while((c = getc(file)) != EOF)
+        putchar(c);
+
 }
