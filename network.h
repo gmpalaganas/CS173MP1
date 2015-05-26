@@ -51,10 +51,12 @@ struct in_addr {
 
 typedef struct socketObject {
     int socketfd;
-    sockaddr_in* server_addr;
+    sockaddr_in* addr;
     char* send_buffer;
     char* recv_buffer;
 } socketObject;
+
+typedef struct socketObject socketObject;
 
 //Prints error then exits with error code 1
 void error(char *msg){
@@ -139,6 +141,7 @@ void sendFile(int socketfd, int filefd, int size){
     
     while(((len = sendfile(socketfd,filefd,&offset,BUFSIZ)) > 0) && remainingSize > 0){
         
+        printf("HERE\n");
         if(len < 0)
             error("Error sending file\n");
 
@@ -187,3 +190,18 @@ int acceptClient(int socketfd, sockaddr_in *clientAddr){
 
 }
 
+void initSocketObject(socketObject* object){
+    object = (socketObject*)malloc(sizeof(socketObject));
+    object->addr = (sockaddr_in*)malloc(sizeof(sockaddr_in));
+    object->send_buffer = (char*)malloc(sizeof(char));
+    object->recv_buffer = (char*)malloc(sizeof(char));
+}
+
+void destroySocketObject(socketObject* object){
+    
+    free(object->send_buffer);
+    free(object->recv_buffer);
+    free(object->addr);
+    free(object);
+
+}

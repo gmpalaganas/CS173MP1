@@ -1,59 +1,111 @@
 #include <stdio.h>
 #include "network.h"
+#include "utilities.h"
 
 #define SERVER_PORT 8888
 #define BUFFER_LENGTH 256 
 
+typedef int boolean;
 
 int main(){
 
-    int socketfd; //Socket File Descriptor
-    int newsocketfd;
+    socketObject *serverSocket, *clientSocket;
     int client_len; //Client address size
     int len; //Len of read or written in read() or write()
-    char* buffer = (char *)malloc(sizeof(char) * BUFFER_LENGTH); //read-write buffer
-    FILE* file;
-    sockaddr_in server_addr, client_addr; //Structure containing Network Addresses
 
-    socketfd = initSocket(TCP);
+    /*initSocketObject(serverSocket);*/
+    /*initSocketObject(clientSocket);*/
+
+    serverSocket = (socketObject*)malloc(sizeof(socketObject));
+    serverSocket->addr = (sockaddr_in*)malloc(sizeof(sockaddr_in));
+    serverSocket->send_buffer = (char*)malloc(sizeof(char));
+    serverSocket->recv_buffer = (char*)malloc(sizeof(char));
+
+    clientSocket = (socketObject*)malloc(sizeof(socketObject));
+    clientSocket->addr = (sockaddr_in*)malloc(sizeof(sockaddr_in));
+    clientSocket->send_buffer = (char*)malloc(sizeof(char));
+    clientSocket->recv_buffer = (char*)malloc(sizeof(char));
+
     
-    if(socketfd < 0)
+    serverSocket->socketfd = initSocket(TCP);
+    
+    if(serverSocket->socketfd < 0)
         error("ERROR opening socket");
 
-    initServer(&server_addr, SERVER_PORT);  
+    initServer(serverSocket->addr, SERVER_PORT);  
 
     //Binds the socket to the address
-    if(bind(socketfd, (sockaddr *) &server_addr, sizeof(server_addr)) < 0)
+    if(bind(serverSocket->socketfd, (sockaddr *) serverSocket->addr, sizeof(*serverSocket->addr)) < 0)
         error("Error in binding");
 
-    listen(socketfd,5);
+    listen(serverSocket->socketfd,5);
 
     printf("Waiting for client...\n");
 
-    newsocketfd = acceptClient(socketfd,&client_addr);
+    clientSocket->socketfd = acceptClient(serverSocket->socketfd,clientSocket->addr);
 
-    if(newsocketfd < 0)
+    if(clientSocket->socketfd < 0)
         error("Error on accept");
 
     printf("Client connected!\n");
+
+    /*getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);*/
+    /*sendACK(clientSocket->socketfd);*/
+    /*printf("COMMAND: %s\n", clientSocket->recv_buffer);*/
+
+    processUpload(clientSocket);
      
-    getMessage(newsocketfd,buffer,BUFFER_LENGTH);
-    printf("File Name: %s\n",buffer);
-
-    file = fopen(buffer,"w");
-    getMessage(newsocketfd,buffer,BUFFER_LENGTH);
-    int size = atoi(buffer);
-    printf("File Size: %s\n", buffer);
-    sendACK(newsocketfd);
-    getFile(newsocketfd,file,size);
-
-    /*sendMessage(socketfd,"ACK");*/
-
-    free(buffer);
-    fclose(file);
-    close(newsocketfd);
-    close(socketfd);
+    close(clientSocket->socketfd);
+    close(serverSocket->socketfd);
+    destroySocketObject(clientSocket);
+    destroySocketObject(serverSocket);
 
     return 0;
 }
 
+boolean processCommand(char* command, socketObject* clientSocket) {
+	char* commandCopy = (char*)malloc(sizeof(char)*(strlen(command) + 1));
+	strcpy(commandCopy, command);
+    char* token = strtok(commandCopy, " \n\r");
+    if (strcmp(token, COMMAND_DOWNLOAD) == 0) {
+        
+    } else if (strcmp(token, COMMAND_UPLOAD) == 0) {
+        return processUpload(clientSocket);
+    } else if (strcmp(token, COMMAND_DELETE) == 0) {
+        
+    } else if (strcmp(token, COMMAND_LIST) == 0) {
+
+    } else if (strcmp(token, COMMAND_LIST_SIZE) == 0) {
+
+    } else {
+        printf("Unknown command: %s\n", command);
+    }
+
+    free(token);
+    free(commandCopy);
+    return FALSE;
+}
+
+boolean processUpload(socketObject *clientSocket){
+
+    FILE* file;
+
+    getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
+    printf("File Name: %s\n",clientSocket->recv_buffer);
+    sendACK(clientSocket->socketfd);
+    
+    file = fopen(clientSocket->recv_buffer,"w");
+    getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
+
+    int size = atoi(clientSocket->recv_buffer);
+    printf("File Size: %s\n", clientSocket->recv_buffer);
+
+    sendACK(clientSocket->socketfd);
+    getFile(clientSocket->socketfd,file,size);
+    sendACK(clientSocket->socketfd);
+    
+    fclose(file);
+
+    return TRUE;
+
+}

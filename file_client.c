@@ -40,22 +40,25 @@ int main(int argc, char** argv) {
     
     //Create the client socket
     clientSocket = (socketObject*) malloc(sizeof(clientSocket));
+    /*initSocketObject(clientSocket);*/
+
+    clientSocket = (socketObject*)malloc(sizeof(socketObject));
+    clientSocket->addr = (sockaddr_in*)malloc(sizeof(sockaddr_in));
+    clientSocket->send_buffer = (char*)malloc(sizeof(char));
+    clientSocket->recv_buffer = (char*)malloc(sizeof(char));
+
     if ((clientSocket->socketfd = initSocket(TCP)) < 0) {
         printf("\nError: Could not initialize client socket.\n");
         return 1;
     }
 
     //Setup the server address
-    clientSocket->server_addr = (sockaddr_in*)malloc(sizeof(sockaddr_in));
-    bzero((char *)(clientSocket->server_addr), sizeof(*(clientSocket->server_addr))); //Zero all the bytes
-    clientSocket->server_addr->sin_family = AF_INET; //Set to IPv4 IP address family
-    clientSocket->server_addr->sin_port = htons(SERVER_PORT); //Converts from host byte order to network byte order
-    clientSocket->recv_buffer = (char *)malloc(sizeof(char) * BUFFER_LENGTH);
-    clientSocket->send_buffer = (char *)malloc(sizeof(char) * BUFFER_LENGTH);
-    
-    
-    //Copy the address of the server into the server_addr socket structure
-    if (inet_pton(AF_INET, argv[1], &((clientSocket->server_addr)->sin_addr)) <= 0) {
+    bzero((char *)(clientSocket->addr), sizeof(*(clientSocket->addr))); //Zero all the bytes
+    clientSocket->addr->sin_family = AF_INET; //Set to IPv4 IP address family
+    clientSocket->addr->sin_port = htons(SERVER_PORT); //Converts from host byte order to network byte order
+        
+    //Copy the address of the server into the addr socket structure
+    if (inet_pton(AF_INET, argv[1], &((clientSocket->addr)->sin_addr)) <= 0) {
         printf("\nError: Could not bind IP address of server.\n");
         return 1;
     }
@@ -68,7 +71,7 @@ int main(int argc, char** argv) {
     }
 
     /*
-    if(connect(socketfd, (sockaddr *) &server_addr, sizeof(server_addr)) < 0) 
+    if(connect(socketfd, (sockaddr *) &addr, sizeof(addr)) < 0) 
         error("ERROR connecting");
 
     printf("Connected to server!\n");
@@ -93,9 +96,8 @@ int main(int argc, char** argv) {
     fclose(file);
     free(buffer);*/
     
-    free(clientSocket->recv_buffer);
-    free(clientSocket->send_buffer);
     close(clientSocket->socketfd); 
+    destroySocketObject(clientSocket);
     return 0;
 }
 
@@ -171,11 +173,15 @@ boolean processUpload(char* filename, socketObject* clientSocket) {
 	
 	//Send the request + the filename to the server
 	//int socketfd = clientSocket->socketfd;
+    
+    /*sendMessage(clientSocket->socketfd, "UPLOAD");*/
+    /*getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);*/
+    /*printf("%s\n",clientSocket->recv_buffer);*/
 	
     sendMessage(clientSocket->socketfd, filename);
+    getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
+    printf("%s\n",clientSocket->recv_buffer);
 
-	//sendMessage(clientSocket->socketfd, filename);
-	
 	
 	//Open the file and prepare for sending
 	FILE* fileToSend = fopen(filename, "r");
@@ -186,7 +192,11 @@ boolean processUpload(char* filename, socketObject* clientSocket) {
     
     sendMessage(clientSocket->socketfd,s_size);
     getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
+    printf("%s\n",clientSocket->recv_buffer);
 	sendFile(clientSocket->socketfd, filefd, getFileSize(fileToSend));
+    printf("File Sent\n");
+    getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
+    printf("%s\n",clientSocket->recv_buffer);
 
     free(s_size);
 	
@@ -199,7 +209,7 @@ boolean processDelete(char* filename) {
 
 boolean connectToServer(socketObject* clientSocket) {
 	printf("Connecting to server...");
-    if(connect(clientSocket->socketfd, (sockaddr *)(clientSocket->server_addr), sizeof(*(clientSocket->server_addr))) < 0) {
+    if(connect(clientSocket->socketfd, (sockaddr *)(clientSocket->addr), sizeof(*(clientSocket->addr))) < 0) {
     	error("ERROR: Cannot connect to server.\n");
     	return FALSE;
     }
