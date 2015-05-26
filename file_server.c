@@ -48,10 +48,6 @@ int main(){
 
     printf("Client connected!\n");
 
-    /*getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);*/
-    /*sendACK(clientSocket->socketfd);*/
-    /*printf("COMMAND: %s\n", clientSocket->recv_buffer);*/
-
     //Start server program
     processCommand(clientSocket);
      
@@ -61,6 +57,9 @@ int main(){
     destroySocketObject(serverSocket);
 
     return 0;
+}
+
+void runServerProgram() {
 }
 
 boolean processCommand(socketObject* clientSocket) {
