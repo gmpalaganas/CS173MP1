@@ -20,6 +20,7 @@ typedef struct hostent hostent;
 #define COMMAND_LIST "LIST"
 #define COMMAND_LIST_SIZE "LIST_SIZE"
 #define COMMAND_DELETE "DELETE"
+#define COMMAND_EXIT "EXIT"
 
 #define ACK "ACK" 
 #define NACK "NACK"
@@ -50,6 +51,7 @@ struct in_addr {
  */
 
 typedef struct socketObject {
+	int ID;
     int socketfd;
     sockaddr_in* addr;
     char* send_buffer;

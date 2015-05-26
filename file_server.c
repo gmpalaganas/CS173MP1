@@ -1,11 +1,32 @@
 #include <stdio.h>
+#include <pthread.h>
 #include "network.h"
 #include "utilities.h"
 
 #define SERVER_PORT 8888
 #define BUFFER_LENGTH 256 
+#define NUM_CLIENTS 10
 
 typedef int boolean;
+pthread_mutex_t clientRequestLock;
+
+void *runClientHandler(void *socket) {
+	printf("Client handle created.\n");
+	int i;
+	socketObject* clientSocket = (socketObject*) socket;
+	printf("Client connected with ID: %d\n", clientSocket->ID);
+	
+	pthread_mutex_lock(&clientRequestLock);
+	processCommand(clientSocket);
+	pthread_mutex_unlock(&clientRequestLock);
+	
+	close(clientSocket->socketfd);
+
+    destroySocketObject(clientSocket);
+
+
+	pthread_exit(NULL);
+}
 
 int main(){
 
@@ -15,6 +36,8 @@ int main(){
 
     /*initSocketObject(serverSocket);*/
     /*initSocketObject(clientSocket);*/
+    pthread_mutex_init(&clientRequestLock, NULL);
+    
 
     serverSocket = (socketObject*)malloc(sizeof(socketObject));
     serverSocket->addr = (sockaddr_in*)malloc(sizeof(sockaddr_in));
@@ -29,37 +52,62 @@ int main(){
     serverSocket->socketfd = initSocket(TCP);
     
     if(serverSocket->socketfd < 0)
-        error("ERROR opening socket");
+        error("ERROR: Could not open server socket.\n");
 
     initServer(serverSocket->addr, SERVER_PORT);  
 
     //Binds the socket to the address
     if(bind(serverSocket->socketfd, (sockaddr *) serverSocket->addr, sizeof(*serverSocket->addr)) < 0)
-        error("Error in binding");
+        error("ERROR: Could not bind server to address.\n");
 
-    listen(serverSocket->socketfd,5);
+	socketObject** clientSet = (socketObject**)malloc(sizeof(socketObject*)*NUM_CLIENTS);
+	int i;
+	for (i = 0; i < NUM_CLIENTS; i++) {
+		clientSet[i] = (socketObject*)malloc(sizeof(socketObject));
+		(clientSet[i])->addr = (sockaddr_in*)malloc(sizeof(sockaddr_in));
+		(clientSet[i])->send_buffer = (char*)malloc(sizeof(char));
+    	(clientSet[i])->recv_buffer = (char*)malloc(sizeof(char));
+    	(clientSet[i])->ID = -1;
+	}
+	
+	listen(serverSocket->socketfd, NUM_CLIENTS);
 
-    printf("Waiting for client...\n");
+    printf("Waiting for clients...\n");
+	//Prepare threads
+	pthread_t threads[NUM_CLIENTS];
+	int rc;
+	
+	int nextOpen = 0;
+	while (TRUE) {
+		(clientSet[nextOpen])->socketfd = acceptClient(serverSocket->socketfd, clientSocket->addr);
+    	if ((clientSet[nextOpen])->socketfd < 0) error("ERROR: Could not establish connection with a client.\n");
+    	else {
+    		clientSet[nextOpen]->ID = nextOpen;
+    		rc = pthread_create(&threads[nextOpen], NULL, runClientHandler, (void *)clientSet[nextOpen]);
+    		if (rc) {
+    			printf("ERROR: Could not create a handle for client connection.\n");
+    			close(clientSet[nextOpen]);
+    			(clientSet[i])->ID = -1;
+    		}
+    	}
+    	nextOpen++;
+    }
 
-    clientSocket->socketfd = acceptClient(serverSocket->socketfd,clientSocket->addr);
-
-    if(clientSocket->socketfd < 0)
-        error("Error on accept");
-
-    printf("Client connected!\n");
-
+    //printf("Client connected!\n");
+    
     //Start server program
-    processCommand(clientSocket);
+    //processCommand(clientSocket);
      
-    close(clientSocket->socketfd);
-    close(serverSocket->socketfd);
-    destroySocketObject(clientSocket);
-    destroySocketObject(serverSocket);
+    close(serverSocket->socketfd);    
+	destroySocketObject(serverSocket);
 
-    return 0;
+    
+	pthread_exit(NULL);
+    //return 0;
 }
 
-void runServerProgram() {
+//Searches for the first available client thread
+int searchClient() {
 }
 
 boolean processCommand(socketObject* clientSocket) {
