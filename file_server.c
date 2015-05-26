@@ -5,10 +5,11 @@
 
 #define SERVER_PORT 8888
 #define BUFFER_LENGTH 256 
-#define NUM_CLIENTS 10
+#define NUM_CLIENTS 3
 
 typedef int boolean;
 pthread_mutex_t clientRequestLock;
+pthread_mutex_t listLock;
 
 void *runClientHandler(void *socket) {
 	printf("Client handle created.\n");
@@ -21,9 +22,13 @@ void *runClientHandler(void *socket) {
 	pthread_mutex_unlock(&clientRequestLock);
 	
 	close(clientSocket->socketfd);
-
-    destroySocketObject(clientSocket);
-
+	//destroySocketObject(clientSocket);
+	
+	//clientSocket = (socketObject*)malloc(sizeof(socketObject));
+	//clientSocket->addr = (sockaddr_in*)malloc(sizeof(sockaddr_in));
+	//clientSocket->send_buffer = (char*)malloc(sizeof(char));
+   	//clientSocket->recv_buffer = (char*)malloc(sizeof(char));
+   	clientSocket->ID = -1;
 
 	pthread_exit(NULL);
 }
@@ -36,7 +41,7 @@ int main(){
     /*initSocketObject(serverSocket);*/
     /*initSocketObject(clientSocket);*/
     pthread_mutex_init(&clientRequestLock, NULL);
-    
+    pthread_mutex_init(&listLock, NULL);
 
     serverSocket = (socketObject*)malloc(sizeof(socketObject));
     serverSocket->addr = (sockaddr_in*)malloc(sizeof(sockaddr_in));
@@ -76,8 +81,9 @@ int main(){
 	pthread_t threads[NUM_CLIENTS];
 	int rc;
 	
-	int nextOpen = 0;
+	int nextOpen;
 	while (TRUE) {
+		nextOpen = searchClient(clientSet);
 		(clientSet[nextOpen])->socketfd = acceptClient(serverSocket->socketfd, clientSocket->addr);
     	if ((clientSet[nextOpen])->socketfd < 0) error("ERROR: Could not establish connection with a client.\n");
     	else {
@@ -86,27 +92,27 @@ int main(){
     		if (rc) {
     			printf("ERROR: Could not create a handle for client connection.\n");
     			close(clientSet[nextOpen]);
-    			(clientSet[i])->ID = -1;
+    			(clientSet[nextOpen])->ID = -1;
     		}
     	}
-    	nextOpen++;
     }
-
-    //printf("Client connected!\n");
-    
-    //Start server program
-    //processCommand(clientSocket);
      
     close(serverSocket->socketfd);    
 	destroySocketObject(serverSocket);
 
-    
 	pthread_exit(NULL);
     //return 0;
 }
 
-//Searches for the first available client thread
-int searchClient() {
+//Searches for the first available client socket position
+int searchClient(socketObject** clientSet) {
+	while (TRUE) {
+		int i;
+		for (i = 0; i < NUM_CLIENTS; i++) {
+			if ((clientSet[i])->ID == -1) return i;
+			printf("Client[%d] ID: %d\n", i, (clientSet[i])->ID);
+		}
+	}
 }
 
 boolean processCommand(socketObject* clientSocket) {
@@ -209,7 +215,10 @@ boolean processList(boolean giveSize,socketObject *clientSocket){
     FILE *fileToSend = fopen(fileName,"w");
 
     strcat(cwd,"/Files");
+    printf("Directory: %s\n", cwd);
+    printf("RES Fiels: %s\n", fileName);
     writeDirToFile(fileToSend,cwd,giveSize);
+    printf("I got here");
     
 	int file_size;
     file_size = getFileSize(fileToSend);

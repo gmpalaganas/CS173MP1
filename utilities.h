@@ -68,7 +68,8 @@ void writeDirToFile(FILE* file, char* dir_name, boolean giveSize){
     DIR *dir;
     dir = opendir(dir_name);
     directory_entity *entity;
-
+	int count = 0;
+	
     if(dir == NULL)
         printf("Error Opening Directory");
     else{
@@ -87,8 +88,14 @@ void writeDirToFile(FILE* file, char* dir_name, boolean giveSize){
                     fclose(curFile);
                 }else
                     fprintf(file,"%s\n", entity->d_name);
+                    
+                count++;
             }
         }
+        
+        if(count == 0)
+        	fprintf(file,"NO FILES IN DIRECTORY");
+        
         closedir(dir);
     }
 }

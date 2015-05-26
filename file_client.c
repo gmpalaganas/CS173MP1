@@ -182,7 +182,14 @@ boolean processDownload(char* filename, socketObject* clientSocket) {
 }
 
 boolean processUpload(char* filename, socketObject* clientSocket) {
-	FILE* fileToSend = fopen(filename, "r");
+	
+	
+	char* f_name = (char *)malloc(sizeof(char) * BUFFER_LENGTH);
+    strcpy(f_name,"Files/");
+    strcat(f_name,filename);
+	
+	printf("File to send: %s\n", f_name);
+	FILE* fileToSend = fopen(f_name, "r");
 	if (fileToSend == NULL) {
 		printf("ERROR: Could not find file in client.\n");
 		return FALSE;
@@ -196,14 +203,11 @@ boolean processUpload(char* filename, socketObject* clientSocket) {
     sendMessage(clientSocket->socketfd, COMMAND_UPLOAD);
     getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
 
-	char* f_name = (char *)malloc(sizeof(char) * BUFFER_LENGTH);
-    strcpy(f_name,"Files/");
-    strcat(f_name,filename);
     sendMessage(clientSocket->socketfd, f_name);
     getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
+
 	//Open the file and prepare for sending
-	FILE* fileToSend = fopen(f_name, "r");
-	int filefd = open(filename, O_RDONLY);
+	int filefd = open(f_name, O_RDONLY);
     int file_size = getFileSize(fileToSend);
 	char* s_size = (char*)malloc(sizeof(char) * 20);
     sprintf(s_size,"%d",file_size);
@@ -230,7 +234,7 @@ boolean processDelete(char* filename, socketObject* clientSocket) {
 	//Send the filename and get an ACK
     char* f_name = (char *)malloc(sizeof(char) * BUFFER_LENGTH);
     strcpy(f_name,"Files/");
-    strcat(f_name,f_name);
+    strcat(f_name,filename);
 	sendMessage(clientSocket->socketfd, f_name);
 	getMessage(clientSocket->socketfd, clientSocket->recv_buffer, BUFFER_LENGTH);
 	
