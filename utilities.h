@@ -1,4 +1,6 @@
 #include <string.h>
+#include <stdlib.h>
+#include <dirent.h>
 
 #define TRUE 1
 #define FALSE 0
@@ -6,6 +8,7 @@
 #define DELIMITERS_PERIOD "."
 
 typedef int boolean;
+typedef struct dirent directory_entity;
 
 /* Utility Functions */
 char* getInput(char* inputStorage) {
@@ -54,8 +57,25 @@ int getFileSize(FILE* file){
     int ret = 0;
     fseek(file,0,SEEK_END);
     ret = ftell(file); 
-    //fseek(file,0,SEEK_SET);
     rewind(file);
 
     return ret;
+}
+
+void writeDirToFile(FILE* file, char* dir_name){
+
+    DIR *dir;
+    dir = opendir(dir_name);
+    directory_entity *entity;
+
+    if(dir == NULL)
+        printf("Error Opening Directory");
+    else{
+        while((entity = readdir(dir)) != NULL){
+            //Do not include hidden files
+            if(entity->d_name[0] != '.')
+                    fprintf(file,"%s\n", entity->d_name);
+        }
+        closedir(dir);
+    }
 }

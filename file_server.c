@@ -8,7 +8,6 @@
 typedef int boolean;
 
 int main(){
-
     socketObject *serverSocket, *clientSocket;
     int client_len; //Client address size
     int len; //Len of read or written in read() or write()
@@ -107,5 +106,20 @@ boolean processUpload(socketObject *clientSocket){
     fclose(file);
 
     return TRUE;
+
+}
+
+boolean processList(socketObject *clientSocket){
+
+    char* cwd = (char *)malloc(sizeof(char) * BUFFER_LENGTH);
+    getcwd(cwd, BUFFER_LENGTH);
+    FILE *dir = fopen("files.txt","w");
+    writeDirToFile(dir,cwd);
+    
+
+
+    fclose(dir);
+    
+
 
 }
