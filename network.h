@@ -21,6 +21,9 @@ typedef struct hostent hostent;
 #define COMMAND_LIST_SIZE "LIST_SIZE"
 #define COMMAND_DELETE "DELETE"
 
+#define ACK "ACK" 
+#define NACK "NACK"
+
 /*
 
 sockaddr_in Structure
@@ -48,9 +51,9 @@ struct in_addr {
 
 typedef struct socketObject {
     int socketfd;
-    int bufferSize;
-    char* buffer;
     sockaddr_in* server_addr;
+    char* send_buffer;
+    char* recv_buffer;
 } socketObject;
 
 //Prints error then exits with error code 1
@@ -72,7 +75,7 @@ int initSocket(int type){
     return ret;
 }
 
-char* getMessage(int socketfd, const int bufferLen) {
+void getMessage(int socketfd, char* recv_buffer, const int bufferLen) {
     
     char* buffer = malloc(bufferLen);
     bzero(buffer,bufferLen);
@@ -81,34 +84,31 @@ char* getMessage(int socketfd, const int bufferLen) {
 
     if(len < 0)
         error("Error reading message\n");
-        
-    return buffer; 
+
+    strcpy(recv_buffer, buffer);
+    free(buffer);
 
 }
 
-void getFile(int socketfd, FILE* file) {
+void getFile(int socketfd, FILE* file, int fileSize) {
     
-    char buffer[BUFSIZ];
+    char* buffer = (char *)malloc(sizeof(char) * BUFSIZ);
     bzero(buffer,BUFSIZ);
 
-    //The first data sent is the file size
-    int len = read(socketfd, buffer, BUFSIZ);
-    int fileSize = atoi(buffer);
-
-    if(len < 0)
-        error("Error reading file\n");
+    int len = 0;
 
     int remainingSize = fileSize; 
 
     while(((len = read(socketfd, buffer, BUFSIZ)) > 0) && (remainingSize > 0)){
-        
+
         fwrite(buffer, sizeof(char), len, file);
         remainingSize -= len;
 
         if(len < 0)
             error("Error reading file\n");
-        
-    }
+    }  
+
+    free(buffer);
 
 
 }
@@ -117,16 +117,21 @@ void getFile(int socketfd, FILE* file) {
 void sendMessage(int socketfd, char* message){
      
     //write() returns the length of the written message returns -1 if fails
-    int len = write(socketfd,message,strlen(message));
+    int len = write(socketfd, message, strlen(message));
     
     if(len < 0)
         error("Error sending message\n");
 
 }
 
+void sendACK(int socketfd){
+    
+    sendMessage(socketfd,ACK);
+
+}
+
 void sendFile(int socketfd, int filefd, int size){
      
-    //write() returns the length of the written message returns -1 if fails
     int len = 0; 
     int fileSize = size;
     int remainingSize = fileSize;
@@ -141,15 +146,6 @@ void sendFile(int socketfd, int filefd, int size){
 
     }
 
-}
-
-int getFileSize(FILE* file){
-    int ret = 0;
-    fseek(file,0,SEEK_END);
-    ret = ftell(file); 
-    fseek(file,0,SEEK_SET);
-
-    return ret;
 }
 
 /* SERVER RELATED FUNCTIONS */
@@ -191,24 +187,3 @@ int acceptClient(int socketfd, sockaddr_in *clientAddr){
 
 }
 
-/* CLIENT RELATED FUNCTIONS */
-
-//CURRENTLY NOT WORKING
-//Connects to server given the socket file desctiptor, hostname (i.e. "127.0.0.1") and port
-void connectToServer(int socketfd, hostent *server, sockaddr_in* serverAddr, char* hostName, int port){
-
-    bzero((char *) serverAddr, sizeof(*serverAddr));
-    
-    serverAddr->sin_family = AF_INET;
-
-    //Copies bytes from first param to second with given length
-    bcopy((char *)&server->h_addr, (char *)&serverAddr->sin_addr.s_addr,server->h_length);
-    serverAddr->sin_port = htons(port);
-
-    
-    //connect returns 0 if success and -1 if fail
-    if(connect(socketfd, (sockaddr *)serverAddr, sizeof(*serverAddr)) < 0)
-        error("Error Connecting to server");
-
-
-}
