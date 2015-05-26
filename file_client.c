@@ -174,9 +174,9 @@ boolean processUpload(char* filename, socketObject* clientSocket) {
 	//Send the request + the filename to the server
 	//int socketfd = clientSocket->socketfd;
     
-    /*sendMessage(clientSocket->socketfd, "UPLOAD");*/
-    /*getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);*/
-    /*printf("%s\n",clientSocket->recv_buffer);*/
+    sendMessage(clientSocket->socketfd, "UPLOAD");
+    getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
+    printf("%s\n",clientSocket->recv_buffer);
 	
     sendMessage(clientSocket->socketfd, filename);
     getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);

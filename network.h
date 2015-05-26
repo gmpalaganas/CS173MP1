@@ -96,19 +96,24 @@ void getFile(int socketfd, FILE* file, int fileSize) {
     
     char* buffer = (char *)malloc(sizeof(char) * BUFSIZ);
     bzero(buffer,BUFSIZ);
+    int expectedSize = BUFSIZ;
 
     int len = 0;
 
     int remainingSize = fileSize; 
 
-    while(((len = read(socketfd, buffer, BUFSIZ)) > 0) && (remainingSize > 0)){
+    while(((len = read(socketfd, buffer, expectedSize)) > 0) && (remainingSize > 0)){
 
         fwrite(buffer, sizeof(char), len, file);
         remainingSize -= len;
 
         if(len < 0)
             error("Error reading file\n");
+
+        if(remainingSize < expectedSize)
+            expectedSize = remainingSize;
     }  
+    
 
     free(buffer);
 
