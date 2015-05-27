@@ -1,15 +1,18 @@
 #include <string.h>
 #include <stdlib.h>
 #include <dirent.h>
+#include <sys/stat.h>
 
 #define TRUE 1
 #define FALSE 0
 #define DELIMITERS_WHITESPACE " \n\r"
 #define DELIMITERS_PERIOD "."
 #define KILOBYTE 1024
+#define MAX_NAME_LEN 255 
 
 typedef int boolean;
 typedef struct dirent directory_entity;
+typedef struct stat file_stat;
 
 /* Utility Functions */
 char* getInput(char* inputStorage) {
@@ -56,11 +59,24 @@ boolean isFilenameValid(char* input) {
 
 int getFileSize(FILE* file){
     int ret = 0;
-    fseek(file,0,SEEK_END);
-    ret = ftell(file); 
+    fseeko(file,0,SEEK_END);
+    ret = ftello(file); 
     rewind(file);
 
     return ret;
+}
+
+int getFileNameSize(char* fileName){
+    
+    file_stat st;
+    int ret = -1; //Error
+
+    if(stat(fileName, &st) == 0)
+        ret = st.st_size;
+
+    
+    return ret;
+    
 }
 
 void writeDirToFile(FILE* file, char* dir_name, boolean giveSize){
@@ -69,6 +85,8 @@ void writeDirToFile(FILE* file, char* dir_name, boolean giveSize){
     dir = opendir(dir_name);
     directory_entity *entity;
 	int count = 0;
+
+    printf("Directory: %s\n", dir_name);
 	
     if(dir == NULL)
         printf("Error Opening Directory");
@@ -77,15 +95,18 @@ void writeDirToFile(FILE* file, char* dir_name, boolean giveSize){
             //Do not include hidden files
             if(entity->d_name[0] != '.'){
                 if(giveSize == TRUE){
-                    FILE* curFile = fopen(entity->d_name,"r");
-                    int size = getFileSize(curFile);
+                    printf("File Name: %s\n", entity->d_name);
+                    char* fileName = (char *)malloc(sizeof(char) * MAX_NAME_LEN);
+                    strcpy(fileName,"Files/");
+                    strcat(fileName,entity->d_name);
+                    int size = getFileNameSize(fileName);
+                    float f_size = (float)size / (float)KILOBYTE;
                     if(size < KILOBYTE)
                         fprintf(file,"%s -- %d bytes\n", entity->d_name,size);
                     else{
-                        float f_size = (float)size / (float)KILOBYTE;
                         fprintf(file,"%s -- %0.1f kB\n", entity->d_name,f_size);
                     }
-                    fclose(curFile);
+                    free(fileName);
                 }else
                     fprintf(file,"%s\n", entity->d_name);
                     
