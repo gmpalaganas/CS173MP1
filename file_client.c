@@ -38,6 +38,7 @@ int main(int argc, char** argv) {
         return 1;
     }
     
+    
     //Create the client socket
     clientSocket = (socketObject*) malloc(sizeof(clientSocket));
     /*initSocketObject(clientSocket);*/
@@ -103,23 +104,30 @@ boolean processCommand(char* command, socketObject* clientSocket) {
 	char* commandCopy = (char*)malloc(sizeof(char)*(strlen(command) + 1));
 	strcpy(commandCopy, command);
     char* token = strtok(commandCopy, " \n\r");
+    char* filename;
     if (strcmp(token, COMMAND_DOWNLOAD) == 0) {
-        token = strtok(NULL, " \n\r");
-        if (isFilenameValid(token)) {
+        token = strtok(NULL, "\n\r");
+        filename = (char*)malloc(sizeof(char)*strlen(token));
+        trimWhiteSpaceBefore(&filename);
+        if (isFilenameValid(filename)) {
             return processDownload(token, clientSocket);
         } else {
             printf("Invalid file name: %s\n", token);
         }
     } else if (strcmp(token, COMMAND_UPLOAD) == 0) {
-        token = strtok(NULL, " \n\r");
-        if (isFilenameValid(token)) {
+        token = strtok(NULL, "\n\r");
+        filename = (char*)malloc(sizeof(char)*strlen(token));
+        trimWhiteSpaceBefore(&filename);
+        if (isFilenameValid(filename)) {
             return processUpload(token, clientSocket);
         } else {
             printf("Invalid file name: %s\n", token);
         }
     } else if (strcmp(token, COMMAND_DELETE) == 0) {
-        token = strtok(NULL, " \n\r");
-        if (isFilenameValid(token)) {
+        token = strtok(NULL, "\n\r");
+        filename = (char*)malloc(sizeof(char)*strlen(token));
+        trimWhiteSpaceBefore(&filename);
+        if (isFilenameValid(filename)) {
             return processDelete(token, clientSocket);
         } else {
             printf("Invalid file name: %s\n", token);
