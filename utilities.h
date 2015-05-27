@@ -35,9 +35,28 @@ boolean isAlphaNumeric(char* input) {
 
     int i;
     for (i = 0; i < len; i++) {
-        if (!isalnum(input[i])) return FALSE;
+        if (!isalnum(input[i]) && !(i == ' ' || i == '_')) return FALSE;
     }
     return TRUE;
+}
+
+void trimWhiteSpaceBefore(char** inputString) {
+	//Count the white spaces in input
+	int i, count = 0;
+	char* input = *inputString;
+	for (i = 0; i < strlen(input); i++) {
+		if (input[i] == ' ') count++;
+		else break;
+	}
+	//printf("Count of space: %d\n", count);
+	char* inputCopy = (char* )malloc(sizeof(char)*(strlen(input) + 1 - count));
+	for (i = 0; i < strlen(input) - count; i++) {
+		//printf("Putting: %c\n", input[i + count]);
+		inputCopy[i] = input[i + count];
+	}
+	inputCopy[i] = '\0';
+	free(*inputString);
+	*inputString = inputCopy;
 }
 
 //Gets the file name from a command like "UPLOAD <filename>"
@@ -52,6 +71,7 @@ boolean isFilenameValid(char* input) {
 	char* inputCopy = (char*)malloc(sizeof(char)*(strlen(input)+1));
 	strcpy(inputCopy, input);
 	boolean result = TRUE;
+	int i;
 	if (!isAlphaNumeric(strtok(inputCopy, ".")) && isAlphaNumeric(strtok(NULL, DELIMITERS_WHITESPACE))) result = FALSE;
 	free(inputCopy);
     return result;

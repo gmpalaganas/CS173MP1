@@ -147,7 +147,7 @@ boolean processDownload(socketObject* clientSocket) {
 	strcpy(filename, clientSocket->recv_buffer);
 	printf("File Name: %s\n", clientSocket->recv_buffer);
 	sendACK(clientSocket->socketfd);
-	
+
 	//Send the size of the file. If the file does not exist, send -1.
 	file = fopen(filename, "r");
 	char* s_size = (char*)malloc(sizeof(char) * 20);
