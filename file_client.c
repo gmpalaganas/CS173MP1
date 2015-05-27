@@ -97,6 +97,7 @@ void displayInstructions() {
     printf("Download a file - DOWNLOAD <file name with extension>\n");
     printf("Upload a file - UPLOAD <file name with extension>\n");
     printf("Delete a file (from server) - DELETE <file name with extension>\n");
+    printf("Exit the client - EXIT\n");
     printf("Input Command: ");
 }
 
