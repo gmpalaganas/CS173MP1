@@ -108,8 +108,8 @@ void getFile(int socketfd, FILE* file, int fileSize) {
 
         fwrite(buffer, sizeof(char), len, file);
         remainingSize -= len;
-        float percentage = ((float)remainingSize / (float)fileSize) * 100;
-        printf("%0.0f\% %d out of %d Downloaded",percentage,remainingSize,fileSize); 
+        float percentage = 100 - ((float)remainingSize / (float)fileSize) * 100;
+        printf("%0.2f%% %d out of %d Downloaded\n",percentage,fileSize - remainingSize,fileSize); 
         if (remainingSize < expectedSize) expectedSize = remainingSize;
 
         if(len < 0)
@@ -153,6 +153,9 @@ void sendFile(int socketfd, int filefd, int size){
             error("Error sending file\n");
 
         remainingSize -= len;
+        
+        float percentage = 100 - ((float)remainingSize / (float)size) * 100;
+        printf("%0.2f%% %d out of %d Uploaded\n",percentage,fileSize - remainingSize,size); 
 
     }
 
