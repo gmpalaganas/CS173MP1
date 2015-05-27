@@ -8,6 +8,24 @@
 #define LOCAL_HOST "127.0.0.1"
 #define SERVER_ADDRESS "Insert Address Here"
 
+#define GRAY "\033[00;30m"
+#define RED "\033[00;31m"
+#define GREEN "\033[00;32m"
+#define YELLOW "\033[00;33m"
+#define BLUE "\033[00;34m"
+#define PINK "\033[00;35m"
+#define CYAN "\033[00;36m"
+#define WHITE "\033[00;37m"
+#define B_GRAY "\033[01;30m"
+#define B_RED "\033[01;31m"
+#define B_GREEN "\033[01;32m"
+#define B_YELLOW "\033[01;33m"
+#define B_BLUE "\033[01;34m"
+#define B_PINK "\033[01;35m"
+#define B_CYAN "\033[01;36m"
+#define B_WHITE "\033[01;37m"
+
+
 typedef struct sockaddr sockaddr;
 typedef struct sockaddr_in sockaddr_in;
 typedef struct hostent hostent;
@@ -91,14 +109,14 @@ void runClientProgram(socketObject* clientSocket) {
 }
 
 void displayInstructions() {
-    printf("\nMAIN MENU\nInput the command in the given format.\n\n");
-    printf("List files on the server - LIST\n");
-    printf("List files on the server with the file sizes - LIST_SIZE\n");
-    printf("Download a file - DOWNLOAD <file name with extension>\n");
-    printf("Upload a file - UPLOAD <file name with extension>\n");
-    printf("Delete a file (from server) - DELETE <file name with extension>\n");
-    printf("Exit the client - EXIT\n");
-    printf("Input Command: ");
+    printf("%s\nMAIN MENU\nInput the command in the given format.\n\n%s",B_BLUE,WHITE);
+    printf("%sLIST%s - List files on the server\n",GREEN,WHITE);
+    printf("%sLIST_SIZE%s - List files on the server with the file sizes\n",GREEN,WHITE);
+    printf("%sDOWNLOAD <file name with extension>%s - Download a file\n",GREEN,WHITE);
+    printf("%sUPLOAD <file name with extension>%s - Upload a file\n",GREEN,WHITE);
+    printf("%sDELETE <file name with extension>%s - Delete a file (from server)\n",GREEN,WHITE);
+    printf("%sEXIT%s - Exit the client\n",GREEN, WHITE);
+    printf("\n%sInput Command:%s ",B_RED,WHITE);
 }
 
 boolean processCommand(char* command, socketObject* clientSocket) {
@@ -151,6 +169,8 @@ boolean processCommand(char* command, socketObject* clientSocket) {
 
 boolean processDownload(char* filename, socketObject* clientSocket) {
     if (!connectToServer(clientSocket)) return FALSE;
+
+    printf("\n%sDownloading %s %s\n",B_BLUE, filename,B_WHITE);
 
 	//Send the command and get the ACK
     sendMessage(clientSocket->socketfd, COMMAND_DOWNLOAD);
@@ -209,6 +229,8 @@ boolean processUpload(char* filename, socketObject* clientSocket) {
 	//Send the request + the filename to the server
 	//int socketfd = clientSocket->socketfd;
     
+    printf("\n%sUploading %s%s\n",B_BLUE,filename,B_WHITE);
+
     sendMessage(clientSocket->socketfd, COMMAND_UPLOAD);
     getMessage(clientSocket->socketfd,clientSocket->recv_buffer,BUFFER_LENGTH);
 
@@ -235,6 +257,8 @@ boolean processUpload(char* filename, socketObject* clientSocket) {
 
 boolean processDelete(char* filename, socketObject* clientSocket) {
     if (!connectToServer(clientSocket)) return FALSE;
+
+    printf("\n%sDELETING %s%s\n",B_BLUE,filename,B_WHITE);
 
 	//Send the command and get an ACK
 	sendMessage(clientSocket->socketfd, COMMAND_DELETE);
@@ -271,6 +295,8 @@ boolean processDelete(char* filename, socketObject* clientSocket) {
 boolean processList(boolean giveSize,socketObject* clientSocket) {
 
     if (!connectToServer(clientSocket)) return FALSE;
+
+    printf("\n%sFILES IN SERVER%s\n",B_BLUE,B_WHITE);
 
 	//Send the command and get the ACK
     char* command = (giveSize == TRUE)?COMMAND_LIST_SIZE:COMMAND_LIST;
