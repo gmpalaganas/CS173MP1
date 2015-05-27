@@ -179,7 +179,7 @@ boolean processDownload(char* filename, socketObject* clientSocket) {
 	}
     
     //Get the file and send an ACK
-    getFile(clientSocket->socketfd, downloadedFile, size);
+    getFile(clientSocket->socketfd, downloadedFile, size, TRUE);
     sendACK(clientSocket->socketfd);
     
     free(f_name);
@@ -288,7 +288,7 @@ boolean processList(boolean giveSize,socketObject* clientSocket) {
     int size = atoi(clientSocket->recv_buffer);
 
     //Get the file and send an ACK
-    getFile(clientSocket->socketfd, downloadedFile, size);
+    getFile(clientSocket->socketfd, downloadedFile, size, FALSE);
     sendACK(clientSocket->socketfd);
     fclose(downloadedFile);
    

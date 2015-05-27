@@ -198,7 +198,7 @@ boolean processUpload(socketObject *clientSocket){
     printf("File Size: %s\n", clientSocket->recv_buffer);
 
     sendACK(clientSocket->socketfd);
-    getFile(clientSocket->socketfd,file,size);
+    getFile(clientSocket->socketfd,file,size, TRUE);
     sendACK(clientSocket->socketfd);
     
     fclose(file);

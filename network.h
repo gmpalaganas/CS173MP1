@@ -94,7 +94,7 @@ void getMessage(int socketfd, char* recv_buffer, const int bufferLen) {
 
 }
 
-void getFile(int socketfd, FILE* file, int fileSize) {
+void getFile(int socketfd, FILE* file, int fileSize, int percentFlag) {
     
     char* buffer = (char *)malloc(sizeof(char) * BUFSIZ);
     bzero(buffer,BUFSIZ);
@@ -108,10 +108,13 @@ void getFile(int socketfd, FILE* file, int fileSize) {
 
         fwrite(buffer, sizeof(char), len, file);
         remainingSize -= len;
-        float percentage = 100 - ((float)remainingSize / (float)fileSize) * 100;
-        printf("%0.2f%% %d out of %d Downloaded\n",percentage,fileSize - remainingSize,fileSize); 
-        if (remainingSize < expectedSize) expectedSize = remainingSize;
-
+        
+        if (percentFlag) {
+		    float percentage = 100 - ((float)remainingSize / (float)fileSize) * 100;
+		    printf("%0.2f%% %d out of %d Downloaded\n",percentage,fileSize - remainingSize,fileSize); 
+		}
+		
+		if (remainingSize < expectedSize) expectedSize = remainingSize;
         if(len < 0)
             error("Error reading file\n");
 
