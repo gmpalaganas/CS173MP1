@@ -86,7 +86,6 @@ void writeDirToFile(FILE* file, char* dir_name, boolean giveSize){
     directory_entity *entity;
 	int count = 0;
 
-    printf("Directory: %s\n", dir_name);
 	
     if(dir == NULL)
         printf("Error Opening Directory");
@@ -95,9 +94,9 @@ void writeDirToFile(FILE* file, char* dir_name, boolean giveSize){
             //Do not include hidden files
             if(entity->d_name[0] != '.'){
                 if(giveSize == TRUE){
-                    printf("File Name: %s\n", entity->d_name);
                     char* fileName = (char *)malloc(sizeof(char) * MAX_NAME_LEN);
-                    strcpy(fileName,"Files/");
+                    strcpy(fileName,dir_name);
+                    strcat(fileName,"/");
                     strcat(fileName,entity->d_name);
                     int size = getFileNameSize(fileName);
                     float f_size = (float)size / (float)KILOBYTE;

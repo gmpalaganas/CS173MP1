@@ -218,7 +218,6 @@ boolean processList(boolean giveSize,socketObject *clientSocket){
     printf("Directory: %s\n", cwd);
     printf("RES Fiels: %s\n", fileName);
     writeDirToFile(fileToSend,cwd,giveSize);
-    printf("I got here");
     
 	int file_size;
     file_size = getFileSize(fileToSend);
