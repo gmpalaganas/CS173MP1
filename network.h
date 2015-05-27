@@ -102,12 +102,14 @@ void getFile(int socketfd, FILE* file, int fileSize) {
     int len = 0;
     int expectedSize = BUFSIZ;
     int remainingSize = fileSize; 
-
+    
     while(((len = read(socketfd, buffer, expectedSize)) > 0) && (remainingSize > 0)){
         
 
         fwrite(buffer, sizeof(char), len, file);
         remainingSize -= len;
+        float percentage = ((float)remainingSize / (float)fileSize) * 100;
+        printf("%0.0f\% %d out of %d Downloaded"); 
         if (remainingSize < expectedSize) expectedSize = remainingSize;
 
         if(len < 0)
