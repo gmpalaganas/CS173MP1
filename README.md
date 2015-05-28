@@ -47,5 +47,5 @@ gcc file_client.c
 ##File Client
 
 ```
-./file_server <Server IP Address>
+./file_client <Server IP Address>
 ```
