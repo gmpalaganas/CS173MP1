@@ -1,0 +1,8 @@
+Rumour.mp3 -- 8766.2 kB
+Sampl e.txt -- 304 bytes
+sample.ppt -- 5731.0 kB
+Sample.txt -- 304 bytes
+client.c -- 1.5 kB
+blank.txt -- 1 bytes
+Sample.png -- 25.2 kB
+server.c -- 1.1 kB
