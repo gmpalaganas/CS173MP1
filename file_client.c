@@ -227,7 +227,6 @@ boolean processUpload(char* filename, socketObject* clientSocket) {
 	if (!connectToServer(clientSocket)) return FALSE;
 		
 	//Send the request + the filename to the server
-	//int socketfd = clientSocket->socketfd;
     
     printf("\n%sUploading %s%s\n",B_BLUE,filename,B_WHITE);
 

@@ -22,13 +22,7 @@ void *runClientHandler(void *socket) {
 	pthread_mutex_unlock(&clientRequestLock);
 	
 	close(clientSocket->socketfd);
-	//destroySocketObject(clientSocket);
-	
-	//clientSocket = (socketObject*)malloc(sizeof(socketObject));
-	//clientSocket->addr = (sockaddr_in*)malloc(sizeof(sockaddr_in));
-	//clientSocket->send_buffer = (char*)malloc(sizeof(char));
-   	//clientSocket->recv_buffer = (char*)malloc(sizeof(char));
-   	clientSocket->ID = -1;
+	clientSocket->ID = -1;
 
 	pthread_exit(NULL);
 }
@@ -38,8 +32,6 @@ int main(){
     int client_len; //Client address size
     int len; //Len of read or written in read() or write()
 
-    /*initSocketObject(serverSocket);*/
-    /*initSocketObject(clientSocket);*/
     pthread_mutex_init(&clientRequestLock, NULL);
     pthread_mutex_init(&listLock, NULL);
 
